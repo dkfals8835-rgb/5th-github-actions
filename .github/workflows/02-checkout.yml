@@ -19,7 +19,7 @@ jobs:
           pwd
           ls -al
 
-            - name: 다른 경로로 체크아웃
+      - name: 다른 경로로 체크아웃
         uses: actions/checkout@v4
         with:
           path: my-repo
