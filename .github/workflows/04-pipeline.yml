@@ -1,0 +1,71 @@
+ame: CI Pipeline
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      context_type:
+        description: '출력할 Context 종류'
+        required: true
+        default: 'summary'
+        type: choice
+        options:
+          - summary
+          - github_full
+          - runner_full
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 린트 실행
+        run: |
+          echo "린트 통과"
+
+  unit_test:
+    runs-on: ubuntu-latest
+    needs: lint
+    outputs:
+      passed_count: ${{ steps.count.outputs.value }}
+    steps:
+      - name: 테스트 실행
+        id: count
+        run: |
+          echo "value=5" >> $GITHUB_OUTPUT
+          echo "테스트 통과: 5/5"
+
+  build:
+    runs-on: ubuntu-latest
+    needs: lint
+    outputs:
+      artifact_name: ${{ steps.set_name.outputs.value }}
+    steps:
+      - name: 빌드 실행
+        id: set_name
+        run: |
+          echo "value=myapp-${{ github.run_number }}.jar" >> $GITHUB_OUTPUT
+          echo "빌드 완료"
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [unit_test, build]
+    if: github.ref_name == 'main'
+    steps:
+      - name: 배포 실행
+        run: |
+          echo "테스트 통과 수: ${{ needs.unit_test.outputs.passed_count }}"
+          echo "배포 아티팩트: ${{ needs.build.outputs.artifact_name }}"
+          echo "배포 환경: production"
+
+  notify:
+    runs-on: ubuntu-latest
+    needs: [lint, unit_test, build, deploy]
+    if: always()
+    steps:
+      - name: 결과 알림
+        run: |
+          echo "lint:      ${{ needs.lint.result }}"
+          echo "unit_test: ${{ needs.unit_test.result }}"
+          echo "build:     ${{ needs.build.result }}"
+          echo "deploy:    ${{ needs.deploy.result }}"
